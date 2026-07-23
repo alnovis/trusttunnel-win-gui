@@ -8,6 +8,11 @@ engine config and starts/stops the process. All TLS / TUN (Wintun) / routing is
 done by the engine -- this app only provides a window, a tray icon, and an
 optional geoip split-tunneling toggle.
 
+**User docs:** [Getting started](docs/getting-started.md) -
+[Configuration](docs/configuration.md) -
+[Security](docs/security.md) -
+[Troubleshooting](docs/troubleshooting.md).
+
 ## What it does
 
 - Connect / Disconnect buttons and a tray icon (minimize/close hide to tray).

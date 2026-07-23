@@ -104,7 +104,7 @@ extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM)
                 let cs = lparam.0 as *const CREATESTRUCTW;
                 if !cs.is_null() {
                     let app_ptr = (*cs).lpCreateParams as isize;
-                    SetWindowLongPtrW(hwnd, GWLP_USERDATA, app_ptr);
+                    SetWindowLongPtrW(hwnd, GWLP_USERDATA, app_ptr as crate::win::WinLong);
                 }
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }

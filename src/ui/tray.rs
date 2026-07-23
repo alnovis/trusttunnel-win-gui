@@ -62,9 +62,14 @@ pub fn remove(hwnd: HWND) {
 }
 
 fn set_tip(nid: &mut NOTIFYICONDATAW, tooltip: &str) {
+    // NOTIFYICONDATAW is #[repr(packed)] on 32-bit, so we must not take a
+    // reference into szTip. Fill a local buffer and store the whole field.
     let w = wide(tooltip);
-    let n = w.len().min(nid.szTip.len());
-    nid.szTip[..n].copy_from_slice(&w[..n]);
+    let mut buf = [0u16; 128]; // szTip length
+    let n = w.len().min(buf.len());
+    buf[..n].copy_from_slice(&w[..n]);
+    buf[buf.len() - 1] = 0; // stay NUL-terminated even if truncated
+    nid.szTip = buf;
 }
 
 /// Show the right-click context menu at the cursor. Returns the chosen command

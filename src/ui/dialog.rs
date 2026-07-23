@@ -131,7 +131,7 @@ extern "system" fn settings_proc(hdlg: HWND, msg: u32, wparam: WPARAM, lparam: L
     unsafe {
         match msg {
             WM_INITDIALOG => {
-                SetWindowLongPtrW(hdlg, GWLP_USERDATA, lparam.0);
+                SetWindowLongPtrW(hdlg, GWLP_USERDATA, lparam.0 as crate::win::WinLong);
                 populate_settings(hdlg, &*(lparam.0 as *const AppConfig));
                 1
             }
@@ -197,7 +197,7 @@ extern "system" fn advanced_proc(hdlg: HWND, msg: u32, wparam: WPARAM, lparam: L
     unsafe {
         match msg {
             WM_INITDIALOG => {
-                SetWindowLongPtrW(hdlg, GWLP_USERDATA, lparam.0);
+                SetWindowLongPtrW(hdlg, GWLP_USERDATA, lparam.0 as crate::win::WinLong);
                 populate_advanced(hdlg, &*(lparam.0 as *const AppConfig));
                 1
             }
@@ -468,7 +468,7 @@ extern "system" fn password_proc(hdlg: HWND, msg: u32, wparam: WPARAM, lparam: L
     unsafe {
         match msg {
             WM_INITDIALOG => {
-                SetWindowLongPtrW(hdlg, GWLP_USERDATA, lparam.0);
+                SetWindowLongPtrW(hdlg, GWLP_USERDATA, lparam.0 as crate::win::WinLong);
                 let ctx = &*(lparam.0 as *const PwCtx);
                 if ctx.create {
                     set_text(
