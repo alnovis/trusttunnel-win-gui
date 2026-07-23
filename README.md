@@ -17,23 +17,65 @@ optional geoip split-tunneling toggle.
 - Geoip list built the same way the Keenetic router does it: download the RIR
   delegated-extended file, filter by country + ipv4, convert address counts to
   CIDR prefixes. Cached locally; refreshed while connected.
+- Auto-reconnect watchdog: detects a dead/stuck engine (from its stdout state
+  plus an external egress probe) and restarts it, with a restart budget and
+  fatal-error detection (no infinite loop on bad creds/cert).
+- Encrypted settings at rest (passphrase, Argon2id + XChaCha20-Poly1305) and a
+  WFP fail-closed kill switch engaged while the tunnel is down.
 
 ## Architecture
 
-```
-GUI (this crate)                         Engine (TrustTunnelClient)
-  settings.toml  --render-->  trusttunnel_client.toml  --read-->  trusttunnel_client.exe
-  connect/disconnect  --spawn/kill-->  child process           --Wintun-->  TUN + routes
-  geoip refresh  --download RIR-->  exclusions[]  ---------------^
+```mermaid
+flowchart TD
+    user([User])
+
+    subgraph gui["trusttunnel-win-gui (this crate)"]
+        window["UI: window + tray"]
+        app["App: orchestration"]
+        vault["Vault: Argon2id + XChaCha20"]
+        geoip["GeoIP: download + parse"]
+        watchdog["Watchdog"]
+        probe["Probe worker"]
+        killswitch["WFP kill switch"]
+    end
+
+    encfile[("settings.enc (encrypted at rest)")]
+    cfgfile[("engine config (short-lived, ACL, shred)")]
+    engine["trusttunnel_client.exe (engine)"]
+    rir[("RIR delegated-extended")]
+    net(("Internet / endpoint"))
+
+    user --> window --> app
+    app <-->|unlock / save| vault
+    vault <-->|read / write| encfile
+    geoip -->|download| rir
+    geoip -->|exclusions| app
+    app -->|render config| cfgfile --> engine
+    app -->|spawn / stop| engine
+    engine -->|stdout state| watchdog
+    probe -->|egress reachable?| watchdog
+    watchdog -->|restart| app
+    watchdog -->|engage while down| killswitch
+    engine -->|Wintun TUN + routes| net
 ```
 
-- `src/config.rs`     -- app settings (server, geoip, killswitch) + paths.
-- `src/toml_writer.rs`-- render `trusttunnel_client.toml` (mode general + exclusions).
-- `src/engine.rs`     -- spawn/stop `trusttunnel_client.exe` (variant A: process control).
-- `src/geoip/`        -- RIR download + parse + `count_to_prefix` + cache (portable, unit-tested).
-- `src/app.rs`        -- orchestration (connect / disconnect / toggle / refresh).
-- `src/ui/`           -- Win32 window + tray (windows-rs). Windows-only.
-- `manifest/`         -- app.manifest (requireAdministrator, Win7..11, Common-Controls v6).
+Modules (portable = builds/tested off Windows; win = Windows-only):
+
+- `src/config.rs` (portable) -- settings model + paths (settings.enc, engine config, geoip cache).
+- `src/secret.rs` (portable) -- `Vault`: passphrase encryption (Argon2id + XChaCha20-Poly1305).
+- `src/toml_writer.rs` (portable) -- render engine config (mode general + exclusions) + atomic write.
+- `src/import.rs` (portable) -- import an exported `trusttunnel_client.toml`.
+- `src/geoip/` (portable) -- RIR download + parse + `count_to_prefix` + cache.
+- `src/engine.rs` -- spawn/stop the engine, stdout channel, PID file + adopt.
+- `src/engine_state.rs` (portable) -- engine stdout -> connection state.
+- `src/probe.rs` (portable) -- background external egress probe.
+- `src/watchdog.rs` (portable) -- reconnect decision (desired-vs-actual, budget, fatal detection).
+- `src/killswitch.rs` + `src/win/wfp.rs` (win) -- WFP fail-closed kill switch.
+- `src/shred.rs` (portable) -- best-effort secure delete.
+- `src/app.rs` -- orchestration (connect / disconnect / toggle / refresh / watchdog tick).
+- `src/ui/` (win) -- Win32 window, tray, settings/password dialogs (windows-rs).
+- `src/win/` (win) -- `proc` (pid verify + single-instance), `wfp`, `acl`.
+- `manifest/` + `assets/app.ico` -- app.manifest (requireAdministrator, Win7..11, Common-Controls v6), dialogs, icon.
 
 ## Why these choices
 
@@ -58,16 +100,29 @@ GUI (this crate)                         Engine (TrustTunnelClient)
 ## Build
 
 The `windows` crate compiles only for Windows targets. On the dev machine
-(macOS/Linux) the portable modules are still checkable:
+(macOS/Linux) the portable modules are still testable:
 
 ```
-cargo test                          # runs geoip/toml unit tests (non-Windows ok)
+cargo test                          # crypto / geoip / watchdog / toml unit tests
 ```
 
-For the real build (on Windows, or cross with the MSVC/GNU toolchain):
+Native build on Windows:
 
 ```
 cargo build --release --target x86_64-pc-windows-msvc
+```
+
+Cross-build from macOS/Linux (GNU target, no C linker fuss beyond mingw):
+
+```
+brew install mingw-w64                       # or the distro package
+rustup target add x86_64-pc-windows-gnu
+# .cargo/config.toml sets linker = x86_64-w64-mingw32-gcc
+export CC_x86_64_pc_windows_gnu=x86_64-w64-mingw32-gcc
+export AR_x86_64_pc_windows_gnu=x86_64-w64-mingw32-ar
+cargo build --release --target x86_64-pc-windows-gnu
+# quick type-check of the Windows-only code without linking:
+cargo check --target x86_64-pc-windows-gnu
 ```
 
 Match the engine/wintun architecture (x86_64 vs i686) to the target OS. See the
@@ -75,7 +130,8 @@ TrustTunnelClient Bamboo specs for the reference Windows toolchain.
 
 ## Status
 
-Skeleton. Portable modules (config/geoip/toml_writer/engine) are functional and
-unit-tested. The Win32 UI layer is wired but needs on-Windows iteration
-(icon resource, worker thread for the blocking geoip download, a proper settings
-dialog for entering server details).
+Feature-complete and cross-builds to a `.exe`; the portable core has 27 unit
+tests and the Windows-only layers (UI/tray/WFP/ACL/proc) are verified by
+cross-compilation. Not yet validated on real hardware: the password flow,
+WFP leak-blocking, the engine-config ACL, Wintun (needs KB4474419), and the
+Windows 7 toolchain/runtime.
