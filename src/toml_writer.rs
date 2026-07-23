@@ -119,6 +119,8 @@ pub fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()>
     use std::io::Write;
 
     let dir = path.parent().unwrap_or_else(|| std::path::Path::new("."));
+    // Create the parent dir if missing (e.g. first run, before %APPDATA%\TrustTunnel exists).
+    std::fs::create_dir_all(dir)?;
     let stem = path
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
@@ -181,5 +183,16 @@ mod tests {
         assert!(leftovers.is_empty(), "temp file left behind");
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn atomic_write_creates_missing_parent_dir() {
+        // First-run case: the target's parent directory does not exist yet.
+        let base = std::env::temp_dir().join(format!("ttwin_mkdir_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let path = base.join("nested").join("settings.enc");
+        super::write_atomic(&path, b"payload").unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), b"payload");
+        let _ = std::fs::remove_dir_all(&base);
     }
 }
