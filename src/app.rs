@@ -44,6 +44,10 @@ pub struct App {
     /// Result channel for an in-flight geoip refresh (runs off the UI thread).
     geoip_rx: Option<Receiver<Result<usize, String>>>,
     refreshing: bool,
+    /// True once the tunnel has connected at least once in the current connect
+    /// session. The kill switch only engages after this, so a misconfigured or
+    /// unreachable server on the FIRST attempt does not block all traffic.
+    session_connected: bool,
 }
 
 /// Handed to a worker thread to run one geoip refresh. The UI layer spawns the
@@ -69,11 +73,14 @@ impl App {
         // Rediscover an engine that outlived a previous wrapper instance.
         let mut tracker = StateTracker::new();
         let mut desired = Desired::Disconnected;
+        let mut session_connected = false;
         if engine.adopt_existing() {
             // We cannot read an adopted process's stdout, so assume it is up
-            // and let the probe/liveness layers correct us.
+            // and let the probe/liveness layers correct us. An adopted engine
+            // was connected before, so the kill switch may guard it.
             tracker.state = ConnState::Connected;
             desired = Desired::Connected;
+            session_connected = true;
         }
 
         let probe = ProbeWorker::spawn(ProbeConfig::default(), PROBE_INTERVAL);
@@ -91,6 +98,7 @@ impl App {
             killswitch: KillSwitch::new(),
             geoip_rx: None,
             refreshing: false,
+            session_connected,
         }
     }
 
@@ -136,6 +144,7 @@ impl App {
             return Err("trusttunnel_client.exe not found (set its path in settings)".into());
         }
         self.desired = Desired::Connected;
+        self.session_connected = false; // fresh attempt: no kill switch until connected
         watchdog::note_healthy(&mut self.counters);
         let r = self.start_engine();
         self.update_killswitch();
@@ -144,6 +153,7 @@ impl App {
 
     pub fn disconnect(&mut self) {
         self.desired = Desired::Disconnected;
+        self.session_connected = false;
         self.engine.stop();
         self.tracker.state = ConnState::Disconnected;
         self.engine_started_at = None;
@@ -221,6 +231,12 @@ impl App {
             }
         }
 
+        // Remember that we reached Connected at least once this session (gates
+        // the kill switch so a failed first connect cannot block all traffic).
+        if self.tracker.state.is_connected() {
+            self.session_connected = true;
+        }
+
         // 3. Fold in a probe result while we believe we are connected.
         if let Some(ok) = probe_result {
             if self.tracker.state.is_connected() {
@@ -260,13 +276,16 @@ impl App {
     }
 
     /// Engage the fail-closed kill switch while the user wants to be connected
-    /// but the tunnel is currently down (starting / crashed / reconnecting);
-    /// disengage once Connected (so tunneled traffic flows) or when the user
-    /// disconnects. Gated by the killswitch_enabled setting. Best-effort: a WFP
-    /// failure must not block VPN operation.
+    /// but the tunnel is currently down (crashed / reconnecting); disengage once
+    /// Connected (so tunneled traffic flows) or when the user disconnects.
+    /// Only after the tunnel has connected at least once this session -- so a
+    /// misconfigured or unreachable server on the first attempt never blocks all
+    /// traffic. Gated by killswitch_enabled. Best-effort: a WFP failure must not
+    /// block VPN operation.
     fn update_killswitch(&mut self) {
         let should = self.cfg.killswitch_enabled
             && self.desired == Desired::Connected
+            && self.session_connected
             && !self.tracker.state.is_connected();
         let ips = if should {
             self.endpoint_ips()
