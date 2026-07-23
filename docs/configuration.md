@@ -29,7 +29,7 @@ Split-tunneling settings are NOT imported -- they stay as you set them.
 | Refresh (hours) | How often to auto-refresh the geoip list. |
 | Kill switch | Block traffic from leaking directly while the tunnel is down. |
 | Log level | `error` / `warn` / `info` / `debug` / `trace`. Raise it only for troubleshooting. |
-| Engine exe | Full path to `trusttunnel_client.exe`. Leave empty to use the one next to the GUI. |
+| Engine exe | Full path to a `trusttunnel_client.exe`. Leave empty to use the built-in engine (set this only to override with your own copy). |
 
 ## Advanced settings
 

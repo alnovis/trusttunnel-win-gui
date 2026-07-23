@@ -7,6 +7,7 @@
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
 mod app;
+mod bootstrap;
 mod config;
 mod engine;
 mod engine_state;

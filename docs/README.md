@@ -12,9 +12,9 @@ User guide for the Windows tray client.
 
 ## In one paragraph
 
-`trusttunnel-gui.exe` is a thin GUI over the TrustTunnel VPN engine
-(`trusttunnel_client.exe`). You drop the GUI, the engine, and `wintun.dll`
-into one folder, run the GUI as administrator, set a password, enter (or
-import) your server details, and click Connect. The engine does the actual
-tunneling; the GUI manages it, keeps it reconnected, and encrypts your settings
-at rest.
+`trusttunnel-gui.exe` is a thin GUI over the TrustTunnel VPN engine. The engine
+(`trusttunnel_client.exe`) and its driver (`wintun.dll`) are built into the exe,
+so you download a single file for your architecture, run it as administrator,
+set a password, enter (or import) your server details, and click Connect. The
+engine does the actual tunneling; the GUI manages it, keeps it reconnected, and
+encrypts your settings at rest.

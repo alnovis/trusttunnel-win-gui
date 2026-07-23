@@ -56,7 +56,15 @@ pub struct GeoipRefreshJob {
 impl App {
     /// Built after the settings vault is unlocked (see `ui::window::run`).
     pub fn new(vault: Vault, cfg: AppConfig) -> Self {
-        let mut engine = Engine::new(&cfg.engine_exe);
+        // Engine path: an explicit Settings path wins (manual override);
+        // otherwise use the embedded engine (extracted on first run) if present;
+        // otherwise a sibling trusttunnel_client.exe (Engine::new default).
+        let engine_path = if !cfg.engine_exe.is_empty() {
+            cfg.engine_exe.clone()
+        } else {
+            crate::bootstrap::ensure_engine().unwrap_or_default()
+        };
+        let mut engine = Engine::new(&engine_path);
 
         // Rediscover an engine that outlived a previous wrapper instance.
         let mut tracker = StateTracker::new();

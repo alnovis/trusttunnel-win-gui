@@ -10,6 +10,12 @@ license = "Apache-2.0"
 name = "trusttunnel-gui"
 path = "src/main.rs"
 
+[features]
+default = []
+# Bake the matching-arch engine (trusttunnel_client.exe) + wintun.dll into the
+# exe (release builds populate vendor/<arch>/ from a pinned TrustTunnel release).
+embed-engine = []
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"

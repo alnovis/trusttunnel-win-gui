@@ -36,13 +36,20 @@ jobs:
         run: cargo test
 
   # 2. Build the real Windows binaries (this also compiles the Windows-only
-  #    code). i686 covers 32-bit Windows 7; x86_64 covers 64-bit.
+  #    code) with the matching-arch engine + wintun.dll embedded, so each asset
+  #    is a single self-contained exe. i686 asset -> 32-bit Windows; x86_64
+  #    asset -> 64-bit Windows (the Wintun kernel driver must match the OS, so a
+  #    32-bit build does NOT cover 64-bit Windows).
   #    NB: MSVC-built binaries target modern Windows; the Windows 7 runtime is
   #    still to be validated on hardware -- switch to *-pc-windows-gnu if needed.
   build:
     name: Build (${{ matrix.arch }})
     needs: validate
     runs-on: windows-latest
+    # Pinned engine release the embedded binaries come from
+    # (keep in sync with bootstrap::ENGINE_VERSION).
+    env:
+      ENGINE_VERSION: "1.0.23"
     strategy:
       fail-fast: false
       matrix:
@@ -64,8 +71,25 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
+      - name: Fetch engine (trusttunnel_client + wintun.dll) for embedding
+        shell: pwsh
+        run: |
+          $ver = "${env:ENGINE_VERSION}"
+          $arch = "${{ matrix.arch }}"
+          $zip = "trusttunnel_client-v$ver-windows-$arch.zip"
+          $url = "https://github.com/TrustTunnel/TrustTunnelClient/releases/download/v$ver/$zip"
+          Write-Output "Downloading $url"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Expand-Archive -Force -Path $zip -DestinationPath extracted
+          $dest = "vendor/$arch"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          foreach ($f in @('trusttunnel_client.exe','wintun.dll','LICENSE.txt','WINTUN_LICENSE.txt')) {
+            Copy-Item -Force "extracted/$f" "$dest/$f"
+          }
+          Get-ChildItem $dest | Select-Object Name,Length
+
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }} --features embed-engine
 
       - name: Stage artifact
         shell: pwsh
@@ -102,7 +126,7 @@ jobs:
             awk "/## \[${VERSION}\]/{flag=1; next} /## \[/{flag=0} flag" CHANGELOG.md > release_notes.txt
           fi
           if [ ! -s release_notes.txt ]; then
-            printf 'Release v%s\n\nRequires the TrustTunnel engine (trusttunnel_client.exe) and a\nmatching wintun.dll next to the GUI, or set the engine path in Settings.\n' "$VERSION" > release_notes.txt
+            printf 'Release v%s\n\nSingle self-contained exe (engine + wintun.dll built in). Download the\nbuild matching your Windows: x86_64 for 64-bit, i686 for 32-bit.\n\nNot code-signed: Windows will warn "unknown publisher" -- choose\nMore info -> Run anyway. Verify the .sha256 if you like.\n' "$VERSION" > release_notes.txt
           fi
           echo "Release notes:"; cat release_notes.txt
 
@@ -112,6 +136,14 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Generate SHA-256 checksums
+        run: |
+          cd dist
+          for f in *.exe; do
+            sha256sum "$f" > "$f.sha256"
+          done
+          sha256sum *.exe
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -119,6 +151,8 @@ jobs:
           body_path: release_notes.txt
           draft: false
           prerelease: false
-          files: dist/*.exe
+          files: |
+            dist/*.exe
+            dist/*.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

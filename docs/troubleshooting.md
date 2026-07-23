@@ -2,10 +2,12 @@
 
 ## "trusttunnel_client.exe not found"
 
-The GUI cannot find the engine. Either put `trusttunnel_client.exe` in the same
-folder as `trusttunnel-gui.exe`, or set its full path in
-Settings -> **Engine exe**. Make sure its architecture matches the GUI
-(both x86_64, or both i686).
+The engine is built into the exe and normally unpacks itself on first run, so
+this is rare. It can happen if you set a custom **Engine exe** path in Settings
+that is wrong (clear it to use the built-in engine), or if the app could not
+write to `%ProgramData%\TrustTunnel\bin`. Run as administrator and try again.
+If you did point it at your own engine, make sure its architecture matches
+Windows (x86_64 vs i686).
 
 ## Status shows FAILED right after connecting
 
@@ -24,10 +26,10 @@ a loop.
 
 ## Stuck on "connecting..." / never connects
 
-- On **Windows 7**: confirm update **KB4474419** is installed. Without it
-  `wintun.dll` cannot load its driver and the tunnel never comes up.
-- Confirm `wintun.dll` is present next to the engine and matches the
-  architecture.
+- On **Windows 7**: confirm update **KB4474419** is installed. Without it the
+  bundled tunnel driver cannot load and the tunnel never comes up.
+- Make sure you downloaded the build that matches Windows (x86_64 for 64-bit,
+  i686 for 32-bit) -- a mismatched build cannot load the driver.
 - Some networks block **QUIC**. If your Protocol is `http3`, switch to `http2`
   in Settings.
 - Check the addresses are reachable; try raising Log level to `debug`.
