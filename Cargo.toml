@@ -1,0 +1,56 @@
+[package]
+name = "trusttunnel-win-gui"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+description = "Native Win32 tray GUI for the TrustTunnel VPN client (Windows 7+)"
+license = "Apache-2.0"
+
+[[bin]]
+name = "trusttunnel-gui"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+# ureq + rustls: pure-Rust TLS. Do NOT use native-tls/schannel -- a bare
+# Windows 7 may lack TLS 1.2 support in SChannel, which breaks HTTPS to
+# ftp.ripe.net. rustls has no OS dependency.
+ureq = { version = "2", default-features = false, features = ["tls", "gzip"] }
+log = "0.4"
+# At-rest encryption of settings (pure Rust, cross-compiles for Win7).
+argon2 = "0.5"
+chacha20poly1305 = { version = "0.10", features = ["alloc"] }
+getrandom = "0.2"
+zeroize = "1"
+
+# The `windows` crate only compiles when targeting Windows. Keep it behind a
+# target cfg so the rest of the crate (geoip/config/toml) stays checkable on
+# macOS/Linux during development.
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Shell",
+    "Win32_UI_Controls",
+    "Win32_UI_Controls_Dialogs",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_Graphics_Gdi",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_System_Com",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_System_Rpc",
+    "Win32_NetworkManagement_WindowsFilteringPlatform",
+] }
+
+[build-dependencies]
+embed-resource = "2"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

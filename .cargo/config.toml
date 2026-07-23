@@ -1,0 +1,5 @@
+# Cross-compile helpers for checking/building the Windows target from macOS.
+# The GNU target lets ring/rustls build with the mingw-w64 toolchain.
+[target.x86_64-pc-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
+ar = "x86_64-w64-mingw32-ar"
