@@ -67,7 +67,9 @@ impl Engine {
     /// process, adopt it so the UI shows "connected" and the watchdog can
     /// supervise it. Returns true if a process was adopted.
     pub fn adopt_existing(&mut self) -> bool {
-        let Some(pid) = pidfile::read() else { return false };
+        let Some(pid) = pidfile::read() else {
+            return false;
+        };
         let exe_name = self
             .exe
             .file_name()

@@ -15,14 +15,30 @@ pub fn render(cfg: &AppConfig, exclusions: &[String]) -> String {
     out.push_str(&format!("loglevel = {}\n", quote(&cfg.log_level)));
     // Always general: full tunnel when exclusions is empty, split when not.
     out.push_str("vpn_mode = \"general\"\n");
-    out.push_str(&format!("killswitch_enabled = {}\n", cfg.killswitch_enabled));
+    out.push_str(&format!(
+        "killswitch_enabled = {}\n",
+        cfg.killswitch_enabled
+    ));
     if !cfg.killswitch_allow_ports.is_empty() {
-        let ports: Vec<String> = cfg.killswitch_allow_ports.iter().map(|p| p.to_string()).collect();
-        out.push_str(&format!("killswitch_allow_ports = [{}]\n", ports.join(", ")));
+        let ports: Vec<String> = cfg
+            .killswitch_allow_ports
+            .iter()
+            .map(|p| p.to_string())
+            .collect();
+        out.push_str(&format!(
+            "killswitch_allow_ports = [{}]\n",
+            ports.join(", ")
+        ));
     }
-    out.push_str(&format!("post_quantum_group_enabled = {}\n", cfg.post_quantum_enabled));
+    out.push_str(&format!(
+        "post_quantum_group_enabled = {}\n",
+        cfg.post_quantum_enabled
+    ));
     out.push_str(&format!("exclusions = {}\n", str_array(exclusions)));
-    out.push_str(&format!("dns_upstreams = {}\n", str_array(&s.dns_upstreams)));
+    out.push_str(&format!(
+        "dns_upstreams = {}\n",
+        str_array(&s.dns_upstreams)
+    ));
     out.push('\n');
 
     out.push_str("[endpoint]\n");
@@ -33,7 +49,10 @@ pub fn render(cfg: &AppConfig, exclusions: &[String]) -> String {
     out.push_str(&format!("has_ipv6 = {}\n", s.has_ipv6));
     out.push_str(&format!("anti_dpi = {}\n", s.anti_dpi));
     out.push_str(&format!("skip_verification = {}\n", s.skip_verification));
-    out.push_str(&format!("upstream_protocol = {}\n", quote(&s.upstream_protocol)));
+    out.push_str(&format!(
+        "upstream_protocol = {}\n",
+        quote(&s.upstream_protocol)
+    ));
     if !s.upstream_fallback_protocol.is_empty() {
         out.push_str(&format!(
             "upstream_fallback_protocol = {}\n",
@@ -78,7 +97,10 @@ fn str_array(items: &[String]) -> String {
 }
 
 /// Render and write the engine config to its canonical path (atomically).
-pub fn write_engine_config(cfg: &AppConfig, exclusions: &[String]) -> std::io::Result<std::path::PathBuf> {
+pub fn write_engine_config(
+    cfg: &AppConfig,
+    exclusions: &[String],
+) -> std::io::Result<std::path::PathBuf> {
     use crate::config::Paths;
     let path = Paths::engine_config_file();
     if let Some(dir) = path.parent() {

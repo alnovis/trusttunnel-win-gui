@@ -168,7 +168,10 @@ change_system_dns = false
         assert_eq!(cfg.server.dns_upstreams, vec!["8.8.8.8:53"]);
         assert_eq!(cfg.mtu_size, 1400);
         assert!(!cfg.change_system_dns);
-        assert!(cfg.server.certificate_pem.starts_with("-----BEGIN CERTIFICATE-----"));
+        assert!(cfg
+            .server
+            .certificate_pem
+            .starts_with("-----BEGIN CERTIFICATE-----"));
     }
 
     #[test]

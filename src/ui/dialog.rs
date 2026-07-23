@@ -139,7 +139,9 @@ extern "system" fn settings_proc(hdlg: HWND, msg: u32, wparam: WPARAM, lparam: L
                 let id = (wparam.0 & 0xFFFF) as i32;
                 match id {
                     ids::IDC_IMPORT => {
-                        if let Some(path) = open_file(hdlg, "Config files\0*.toml\0All files\0*.*\0\0") {
+                        if let Some(path) =
+                            open_file(hdlg, "Config files\0*.toml\0All files\0*.*\0\0")
+                        {
                             if let Ok(text) = std::fs::read_to_string(&path) {
                                 let cfg = &mut *cfg_ptr(hdlg);
                                 // Read current edits first so import merges over them.
@@ -163,7 +165,9 @@ extern "system" fn settings_proc(hdlg: HWND, msg: u32, wparam: WPARAM, lparam: L
                         1
                     }
                     ids::IDC_BROWSE => {
-                        if let Some(path) = open_file(hdlg, "Executables\0*.exe\0All files\0*.*\0\0") {
+                        if let Some(path) =
+                            open_file(hdlg, "Executables\0*.exe\0All files\0*.*\0\0")
+                        {
                             set_text(hdlg, ids::IDE_ENGINE, &path);
                         }
                         1
@@ -281,7 +285,11 @@ fn populate_advanced(hdlg: HWND, cfg: &AppConfig) {
     set_text(hdlg, ids::IDE_CUSTOMSNI, &s.custom_sni);
     set_text(hdlg, ids::IDE_MTU, &cfg.mtu_size.to_string());
     set_lines(hdlg, ids::IDE_DNS, &s.dns_upstreams);
-    let ports: Vec<String> = cfg.killswitch_allow_ports.iter().map(|p| p.to_string()).collect();
+    let ports: Vec<String> = cfg
+        .killswitch_allow_ports
+        .iter()
+        .map(|p| p.to_string())
+        .collect();
     set_text(hdlg, ids::IDE_KSPORTS, &ports.join(", "));
 }
 
@@ -332,7 +340,11 @@ fn get_lines(hdlg: HWND, id: i32) -> Vec<String> {
 }
 
 fn set_check(hdlg: HWND, id: i32, checked: bool) {
-    let state = if checked { BST_CHECKED.0 } else { BST_UNCHECKED.0 } as usize;
+    let state = if checked {
+        BST_CHECKED.0
+    } else {
+        BST_UNCHECKED.0
+    } as usize;
     unsafe {
         SendDlgItemMessageW(hdlg, id, BM_SETCHECK, WPARAM(state), LPARAM(0));
     }
@@ -350,7 +362,13 @@ fn combo_fill(hdlg: HWND, id: i32, options: &[&str], selected: &str) {
         let mut sel = 0usize;
         for (i, opt) in options.iter().enumerate() {
             let w = wide(opt);
-            SendDlgItemMessageW(hdlg, id, CB_ADDSTRING, WPARAM(0), LPARAM(w.as_ptr() as isize));
+            SendDlgItemMessageW(
+                hdlg,
+                id,
+                CB_ADDSTRING,
+                WPARAM(0),
+                LPARAM(w.as_ptr() as isize),
+            );
             if *opt == selected {
                 sel = i;
             }
@@ -374,7 +392,12 @@ fn msgbox(hdlg: HWND, text: &str) {
     unsafe {
         let t = wide(text);
         let cap = wide("TrustTunnel");
-        MessageBoxW(hdlg, PCWSTR(t.as_ptr()), PCWSTR(cap.as_ptr()), MB_OK | MB_ICONWARNING);
+        MessageBoxW(
+            hdlg,
+            PCWSTR(t.as_ptr()),
+            PCWSTR(cap.as_ptr()),
+            MB_OK | MB_ICONWARNING,
+        );
     }
 }
 
@@ -393,7 +416,10 @@ fn open_file(parent: HWND, filter: &str) -> Option<String> {
             ..Default::default()
         };
         if GetOpenFileNameW(&mut ofn).as_bool() {
-            let end = file_buf.iter().position(|&c| c == 0).unwrap_or(file_buf.len());
+            let end = file_buf
+                .iter()
+                .position(|&c| c == 0)
+                .unwrap_or(file_buf.len());
             Some(String::from_utf16_lossy(&file_buf[..end]))
         } else {
             None
@@ -413,7 +439,10 @@ struct PwCtx {
 /// Prompt for a password. `create` shows a confirm field and requires a match.
 /// Returns None if the user cancels.
 pub fn prompt_password(create: bool) -> Option<String> {
-    let mut ctx = PwCtx { create, out: String::new() };
+    let mut ctx = PwCtx {
+        create,
+        out: String::new(),
+    };
     unsafe {
         let hinst: HINSTANCE = GetModuleHandleW(None).unwrap_or_default().into();
         let ret = DialogBoxParamW(
@@ -442,7 +471,11 @@ extern "system" fn password_proc(hdlg: HWND, msg: u32, wparam: WPARAM, lparam: L
                 SetWindowLongPtrW(hdlg, GWLP_USERDATA, lparam.0);
                 let ctx = &*(lparam.0 as *const PwCtx);
                 if ctx.create {
-                    set_text(hdlg, ids::IDC_PWINFO, "Create a password to protect your settings:");
+                    set_text(
+                        hdlg,
+                        ids::IDC_PWINFO,
+                        "Create a password to protect your settings:",
+                    );
                 } else {
                     set_text(hdlg, ids::IDC_PWINFO, "Enter password:");
                     if let Ok(h) = GetDlgItem(hdlg, ids::IDE_PW2) {
@@ -501,7 +534,9 @@ fn change_password_flow(hdlg: HWND) {
         }
     };
 
-    let Some(old) = prompt_password(false) else { return };
+    let Some(old) = prompt_password(false) else {
+        return;
+    };
     let (_old_vault, plaintext) = match Vault::open(&blob, &old) {
         Ok(x) => x,
         Err(_) => {
@@ -510,7 +545,9 @@ fn change_password_flow(hdlg: HWND) {
         }
     };
 
-    let Some(new) = prompt_password(true) else { return };
+    let Some(new) = prompt_password(true) else {
+        return;
+    };
     let new_vault = match Vault::create(&new) {
         Ok(v) => v,
         Err(e) => {
@@ -545,7 +582,12 @@ fn info(text: &str) {
     unsafe {
         let t = wide(text);
         let c = wide("TrustTunnel");
-        MessageBoxW(HWND::default(), PCWSTR(t.as_ptr()), PCWSTR(c.as_ptr()), MB_OK | MB_ICONWARNING);
+        MessageBoxW(
+            HWND::default(),
+            PCWSTR(t.as_ptr()),
+            PCWSTR(c.as_ptr()),
+            MB_OK | MB_ICONWARNING,
+        );
     }
 }
 

@@ -18,9 +18,9 @@ use windows::Win32::Security::Authorization::{
     SE_FILE_OBJECT, TRUSTEE_IS_SID, TRUSTEE_IS_WELL_KNOWN_GROUP, TRUSTEE_W,
 };
 use windows::Win32::Security::{
-    CreateWellKnownSid, ACE_FLAGS, ACL, DACL_SECURITY_INFORMATION,
-    PROTECTED_DACL_SECURITY_INFORMATION, PSID, SECURITY_MAX_SID_SIZE, WinBuiltinAdministratorsSid,
-    WinLocalSystemSid, WELL_KNOWN_SID_TYPE,
+    CreateWellKnownSid, WinBuiltinAdministratorsSid, WinLocalSystemSid, ACE_FLAGS, ACL,
+    DACL_SECURITY_INFORMATION, PROTECTED_DACL_SECURITY_INFORMATION, PSID, SECURITY_MAX_SID_SIZE,
+    WELL_KNOWN_SID_TYPE,
 };
 
 use crate::win::wide;
@@ -32,8 +32,13 @@ pub fn restrict_file(path: &Path) {
 fn make_sid(kind: WELL_KNOWN_SID_TYPE, buf: &mut [u8]) -> Result<(), ()> {
     let mut cb = buf.len() as u32;
     unsafe {
-        CreateWellKnownSid(kind, PSID::default(), PSID(buf.as_mut_ptr() as *mut _), &mut cb)
-            .map_err(|_| ())
+        CreateWellKnownSid(
+            kind,
+            PSID::default(),
+            PSID(buf.as_mut_ptr() as *mut _),
+            &mut cb,
+        )
+        .map_err(|_| ())
     }
 }
 

@@ -77,15 +77,30 @@ pub fn show_context_menu(hwnd: HWND, connected: bool, split_on: bool) -> u32 {
         };
 
         let show = wide("Open");
-        let _ = AppendMenuW(menu, MF_STRING, super::IDM_SHOW as usize, PCWSTR(show.as_ptr()));
+        let _ = AppendMenuW(
+            menu,
+            MF_STRING,
+            super::IDM_SHOW as usize,
+            PCWSTR(show.as_ptr()),
+        );
         let _ = AppendMenuW(menu, MF_SEPARATOR, 0, PCWSTR::null());
 
         if connected {
             let d = wide("Disconnect");
-            let _ = AppendMenuW(menu, MF_STRING, super::IDM_DISCONNECT as usize, PCWSTR(d.as_ptr()));
+            let _ = AppendMenuW(
+                menu,
+                MF_STRING,
+                super::IDM_DISCONNECT as usize,
+                PCWSTR(d.as_ptr()),
+            );
         } else {
             let c = wide("Connect");
-            let _ = AppendMenuW(menu, MF_STRING, super::IDM_CONNECT as usize, PCWSTR(c.as_ptr()));
+            let _ = AppendMenuW(
+                menu,
+                MF_STRING,
+                super::IDM_CONNECT as usize,
+                PCWSTR(c.as_ptr()),
+            );
         }
 
         let split_label = if split_on {
@@ -93,11 +108,21 @@ pub fn show_context_menu(hwnd: HWND, connected: bool, split_on: bool) -> u32 {
         } else {
             wide("Split tunneling: OFF")
         };
-        let _ = AppendMenuW(menu, MF_STRING, super::IDM_SPLIT as usize, PCWSTR(split_label.as_ptr()));
+        let _ = AppendMenuW(
+            menu,
+            MF_STRING,
+            super::IDM_SPLIT as usize,
+            PCWSTR(split_label.as_ptr()),
+        );
 
         let _ = AppendMenuW(menu, MF_SEPARATOR, 0, PCWSTR::null());
         let e = wide("Exit");
-        let _ = AppendMenuW(menu, MF_STRING, super::IDM_EXIT as usize, PCWSTR(e.as_ptr()));
+        let _ = AppendMenuW(
+            menu,
+            MF_STRING,
+            super::IDM_EXIT as usize,
+            PCWSTR(e.as_ptr()),
+        );
 
         // Required so the menu dismisses correctly on click-away.
         let _ = SetForegroundWindow(hwnd);

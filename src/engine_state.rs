@@ -96,7 +96,11 @@ pub struct StateTracker {
 
 impl StateTracker {
     pub fn new() -> Self {
-        Self { state: ConnState::Idle, last_error: None, fatal: None }
+        Self {
+            state: ConnState::Idle,
+            last_error: None,
+            fatal: None,
+        }
     }
 
     /// Call when we (re)start the engine.

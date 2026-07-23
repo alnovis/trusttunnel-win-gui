@@ -9,11 +9,11 @@ use windows::Win32::UI::Controls::{BST_CHECKED, BST_UNCHECKED};
 use windows::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
+use super::*;
 use crate::app::App;
 use crate::config::AppConfig;
 use crate::secret::Vault;
 use crate::win::wide;
-use super::*;
 
 const CLASS_NAME: &str = "TrustTunnelGuiWindow";
 const WINDOW_TITLE: &str = "TrustTunnel";
@@ -217,11 +217,56 @@ unsafe fn create_controls(hwnd: HWND) {
     let checkbox = WINDOW_STYLE(BS_AUTOCHECKBOX as u32);
 
     mk("Connect", pushbutton, 20, 20, 140, 32, IDC_CONNECT, &button);
-    mk("Disconnect", pushbutton, 180, 20, 140, 32, IDC_DISCONNECT, &button);
-    mk("Split tunneling (geoip)", checkbox, 20, 70, 300, 24, IDC_SPLIT, &button);
-    mk("Refresh geoip list", pushbutton, 20, 104, 300, 30, IDC_REFRESH, &button);
-    mk("Status: disconnected", WINDOW_STYLE(0), 20, 150, 320, 40, IDC_STATUS, &static_cls);
-    mk("Settings...", pushbutton, 20, 196, 300, 30, IDC_SETTINGS, &button);
+    mk(
+        "Disconnect",
+        pushbutton,
+        180,
+        20,
+        140,
+        32,
+        IDC_DISCONNECT,
+        &button,
+    );
+    mk(
+        "Split tunneling (geoip)",
+        checkbox,
+        20,
+        70,
+        300,
+        24,
+        IDC_SPLIT,
+        &button,
+    );
+    mk(
+        "Refresh geoip list",
+        pushbutton,
+        20,
+        104,
+        300,
+        30,
+        IDC_REFRESH,
+        &button,
+    );
+    mk(
+        "Status: disconnected",
+        WINDOW_STYLE(0),
+        20,
+        150,
+        320,
+        40,
+        IDC_STATUS,
+        &static_cls,
+    );
+    mk(
+        "Settings...",
+        pushbutton,
+        20,
+        196,
+        300,
+        30,
+        IDC_SETTINGS,
+        &button,
+    );
 }
 
 fn handle_command(hwnd: HWND, id: i32) {
@@ -323,12 +368,19 @@ fn set_status(hwnd: HWND, text: &str) {
 }
 
 fn is_checked(hwnd: HWND, id: i32) -> bool {
-    unsafe { SendMessageW(control(hwnd, id), BM_GETCHECK, WPARAM(0), LPARAM(0)).0 == BST_CHECKED.0 as isize }
+    unsafe {
+        SendMessageW(control(hwnd, id), BM_GETCHECK, WPARAM(0), LPARAM(0)).0
+            == BST_CHECKED.0 as isize
+    }
 }
 
 fn set_checked(hwnd: HWND, id: i32, checked: bool) {
     unsafe {
-        let state = if checked { BST_CHECKED.0 } else { BST_UNCHECKED.0 } as usize;
+        let state = if checked {
+            BST_CHECKED.0
+        } else {
+            BST_UNCHECKED.0
+        } as usize;
         let _ = SendMessageW(control(hwnd, id), BM_SETCHECK, WPARAM(state), LPARAM(0));
     }
 }
@@ -342,11 +394,16 @@ fn refresh_ui(hwnd: HWND) {
         set_checked(hwnd, IDC_SPLIT, app.split_enabled());
 
         let (short, long) = match app.state() {
-            ConnState::Idle | ConnState::Disconnected => ("disconnected", "Status: disconnected".to_string()),
+            ConnState::Idle | ConnState::Disconnected => {
+                ("disconnected", "Status: disconnected".to_string())
+            }
             ConnState::Connecting => ("connecting", "Status: connecting...".to_string()),
             ConnState::Connected => ("connected", "Status: connected".to_string()),
             ConnState::Reconnecting => ("reconnecting", "Status: reconnecting...".to_string()),
-            ConnState::Crashed => ("reconnecting", "Status: engine stopped, recovering...".to_string()),
+            ConnState::Crashed => (
+                "reconnecting",
+                "Status: engine stopped, recovering...".to_string(),
+            ),
             ConnState::Failed(reason) => {
                 let why = match reason {
                     FailReason::Auth => "authentication failed",

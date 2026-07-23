@@ -163,7 +163,10 @@ impl App {
         self.refreshing = true;
         let (tx, rx) = channel();
         self.geoip_rx = Some(rx);
-        Some(GeoipRefreshJob { geoip: self.cfg.geoip.clone(), tx })
+        Some(GeoipRefreshJob {
+            geoip: self.cfg.geoip.clone(),
+            tx,
+        })
     }
 
     /// Finalize a completed refresh (called on the UI thread after the worker
@@ -218,7 +221,12 @@ impl App {
         }
 
         // 4. Decide and act.
-        match watchdog::decide(self.desired, &self.tracker.state, &self.counters, &self.params) {
+        match watchdog::decide(
+            self.desired,
+            &self.tracker.state,
+            &self.counters,
+            &self.params,
+        ) {
             Action::Restart => {
                 self.counters.restarts += 1;
                 self.counters.probe_fails = 0;
@@ -252,7 +260,11 @@ impl App {
         let should = self.cfg.killswitch_enabled
             && self.desired == Desired::Connected
             && !self.tracker.state.is_connected();
-        let ips = if should { self.endpoint_ips() } else { Vec::new() };
+        let ips = if should {
+            self.endpoint_ips()
+        } else {
+            Vec::new()
+        };
         if let Err(e) = self.killswitch.sync(should, &ips) {
             self.tracker.last_error = Some(format!("kill switch: {e}"));
         }
@@ -304,7 +316,9 @@ impl App {
     /// it (shrinking on-disk credential exposure to ~ENGINE_CONFIG_TTL).
     fn maybe_shred_engine_config(&mut self) {
         if let Some(started) = self.engine_started_at {
-            if self.engine.status() == EngineStatus::Running && started.elapsed() >= ENGINE_CONFIG_TTL {
+            if self.engine.status() == EngineStatus::Running
+                && started.elapsed() >= ENGINE_CONFIG_TTL
+            {
                 shred::shred_file(&Paths::engine_config_file());
                 self.engine_started_at = None;
             }

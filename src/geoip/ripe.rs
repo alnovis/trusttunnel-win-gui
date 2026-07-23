@@ -77,6 +77,9 @@ ripencc|DE|ipv4|9.9.9.0|256|20200101|allocated\n\
 ripencc|RU|ipv4|*|0|20200101|reserved\n\
 ripencc|RU|ipv4|5.6.0.0|65536|20200101|allocated";
         let cidrs = parse_country_cidrs(body, "RU");
-        assert_eq!(cidrs, vec!["1.2.3.0/24".to_string(), "5.6.0.0/16".to_string()]);
+        assert_eq!(
+            cidrs,
+            vec!["1.2.3.0/24".to_string(), "5.6.0.0/16".to_string()]
+        );
     }
 }

@@ -43,7 +43,10 @@ pub struct Params {
 
 impl Default for Params {
     fn default() -> Self {
-        Self { probe_fail_threshold: 3, max_restarts: 5 }
+        Self {
+            probe_fail_threshold: 3,
+            max_restarts: 5,
+        }
     }
 }
 
@@ -120,51 +123,92 @@ mod tests {
     #[test]
     fn disconnected_desire_is_passive() {
         let c = Counters::default();
-        assert_eq!(decide(Desired::Disconnected, &ConnState::Crashed, &c, &p()), Action::None);
+        assert_eq!(
+            decide(Desired::Disconnected, &ConnState::Crashed, &c, &p()),
+            Action::None
+        );
     }
 
     #[test]
     fn crash_restarts_within_budget() {
-        let c = Counters { restarts: 2, ..Default::default() };
-        assert_eq!(decide(Desired::Connected, &ConnState::Crashed, &c, &p()), Action::Restart);
+        let c = Counters {
+            restarts: 2,
+            ..Default::default()
+        };
+        assert_eq!(
+            decide(Desired::Connected, &ConnState::Crashed, &c, &p()),
+            Action::Restart
+        );
     }
 
     #[test]
     fn crash_gives_up_over_budget() {
-        let c = Counters { restarts: 5, ..Default::default() };
-        assert_eq!(decide(Desired::Connected, &ConnState::Crashed, &c, &p()), Action::GiveUp);
+        let c = Counters {
+            restarts: 5,
+            ..Default::default()
+        };
+        assert_eq!(
+            decide(Desired::Connected, &ConnState::Crashed, &c, &p()),
+            Action::GiveUp
+        );
     }
 
     #[test]
     fn fatal_always_gives_up() {
         let c = Counters::default();
         assert_eq!(
-            decide(Desired::Connected, &ConnState::Failed(FailReason::Auth), &c, &p()),
+            decide(
+                Desired::Connected,
+                &ConnState::Failed(FailReason::Auth),
+                &c,
+                &p()
+            ),
             Action::GiveUp
         );
     }
 
     #[test]
     fn reconnecting_is_left_alone() {
-        let c = Counters { probe_fails: 9, ..Default::default() };
-        assert_eq!(decide(Desired::Connected, &ConnState::Reconnecting, &c, &p()), Action::None);
+        let c = Counters {
+            probe_fails: 9,
+            ..Default::default()
+        };
+        assert_eq!(
+            decide(Desired::Connected, &ConnState::Reconnecting, &c, &p()),
+            Action::None
+        );
     }
 
     #[test]
     fn connected_healthy_does_nothing() {
-        let c = Counters { probe_fails: 0, ..Default::default() };
-        assert_eq!(decide(Desired::Connected, &ConnState::Connected, &c, &p()), Action::None);
+        let c = Counters {
+            probe_fails: 0,
+            ..Default::default()
+        };
+        assert_eq!(
+            decide(Desired::Connected, &ConnState::Connected, &c, &p()),
+            Action::None
+        );
     }
 
     #[test]
     fn connected_dead_egress_restarts() {
-        let c = Counters { probe_fails: 3, ..Default::default() };
-        assert_eq!(decide(Desired::Connected, &ConnState::Connected, &c, &p()), Action::Restart);
+        let c = Counters {
+            probe_fails: 3,
+            ..Default::default()
+        };
+        assert_eq!(
+            decide(Desired::Connected, &ConnState::Connected, &c, &p()),
+            Action::Restart
+        );
     }
 
     #[test]
     fn probe_streak_clears_on_success() {
-        let mut c = Counters { probe_fails: 2, ..Default::default() };
+        let mut c = Counters {
+            probe_fails: 2,
+            ..Default::default()
+        };
         record_probe(&mut c, true);
         assert_eq!(c.probe_fails, 0);
     }

@@ -37,7 +37,11 @@ impl Default for KdfParams {
     fn default() -> Self {
         // ~64 MiB, 3 passes: expensive enough to slow offline brute force of a
         // copied file, fast enough for an interactive unlock (~sub-second).
-        Self { m_cost: 65536, t_cost: 3, p_cost: 1 }
+        Self {
+            m_cost: 65536,
+            t_cost: 3,
+            p_cost: 1,
+        }
     }
 }
 
@@ -74,7 +78,11 @@ impl Vault {
         let m_cost = u32::from_le_bytes(blob[6..10].try_into().unwrap());
         let t_cost = u32::from_le_bytes(blob[10..14].try_into().unwrap());
         let p_cost = u32::from_le_bytes(blob[14..18].try_into().unwrap());
-        let params = KdfParams { m_cost, t_cost, p_cost };
+        let params = KdfParams {
+            m_cost,
+            t_cost,
+            p_cost,
+        };
         let mut salt = [0u8; SALT_LEN];
         salt.copy_from_slice(&blob[18..18 + SALT_LEN]);
         let nonce_off = 18 + SALT_LEN;
@@ -96,8 +104,8 @@ impl Vault {
     pub fn seal(&self, plaintext: &[u8]) -> Result<Vec<u8>, String> {
         let mut nonce = [0u8; NONCE_LEN];
         rand_bytes(&mut nonce)?;
-        let cipher =
-            XChaCha20Poly1305::new_from_slice(self.key.as_slice()).map_err(|_| "key setup failed")?;
+        let cipher = XChaCha20Poly1305::new_from_slice(self.key.as_slice())
+            .map_err(|_| "key setup failed")?;
         let ciphertext = cipher
             .encrypt(XNonce::from_slice(&nonce), plaintext)
             .map_err(|_| "encrypt failed")?;
@@ -146,7 +154,11 @@ mod tests {
 
     // Cheap params so tests stay fast.
     fn fast() -> Vault {
-        let params = KdfParams { m_cost: 256, t_cost: 1, p_cost: 1 };
+        let params = KdfParams {
+            m_cost: 256,
+            t_cost: 1,
+            p_cost: 1,
+        };
         let salt = [7u8; SALT_LEN];
         let key = derive_key("pw", &salt, &params).unwrap();
         Vault { key, salt, params }

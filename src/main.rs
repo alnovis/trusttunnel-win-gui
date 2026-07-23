@@ -13,10 +13,10 @@ mod engine_state;
 mod geoip;
 mod import;
 mod killswitch;
-mod secret;
-mod shred;
 mod pidfile;
 mod probe;
+mod secret;
+mod shred;
 mod toml_writer;
 mod watchdog;
 
@@ -51,5 +51,7 @@ fn main() {
 // still `cargo test` the portable modules (geoip/config/toml_writer/engine).
 #[cfg(not(windows))]
 fn main() {
-    eprintln!("trusttunnel-gui targets Windows. Portable modules are unit-tested via `cargo test`.");
+    eprintln!(
+        "trusttunnel-gui targets Windows. Portable modules are unit-tested via `cargo test`."
+    );
 }
