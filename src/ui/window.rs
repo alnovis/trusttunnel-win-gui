@@ -1,11 +1,15 @@
-//! Main window: connect/disconnect buttons, split-tunneling checkbox, a
+//! Main window: a connect/disconnect toggle, split-tunneling checkbox, a
 //! refresh-geoip button, and a status line. Minimizes to the tray.
 #![cfg(windows)]
 
 use windows::core::PCWSTR;
-use windows::Win32::Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM};
+use windows::Win32::Foundation::{COLORREF, HINSTANCE, HWND, LPARAM, LRESULT, WPARAM};
+use windows::Win32::Graphics::Gdi::{
+    CreateSolidBrush, DeleteObject, DrawTextW, FillRect, FrameRect, InvalidateRect, SetBkMode,
+    SetTextColor, DT_CENTER, DT_SINGLELINE, DT_VCENTER, HGDIOBJ, TRANSPARENT,
+};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
-use windows::Win32::UI::Controls::{BST_CHECKED, BST_UNCHECKED};
+use windows::Win32::UI::Controls::{BST_CHECKED, BST_UNCHECKED, DRAWITEMSTRUCT, ODS_SELECTED};
 use windows::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
@@ -132,6 +136,14 @@ extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM)
                 handle_command(hwnd, id);
                 LRESULT(0)
             }
+            WM_DRAWITEM => {
+                let dis = lparam.0 as *const DRAWITEMSTRUCT;
+                if !dis.is_null() && (*dis).CtlID == IDC_TOGGLE as u32 {
+                    draw_toggle(hwnd, &*dis);
+                    return LRESULT(1); // handled
+                }
+                DefWindowProcW(hwnd, msg, wparam, lparam)
+            }
             m if m == WM_APP_GEOIP_DONE => {
                 if let Some(p) = app_from(hwnd) {
                     let msg = (*p).finish_geoip_refresh();
@@ -216,17 +228,11 @@ unsafe fn create_controls(hwnd: HWND) {
     let pushbutton = WINDOW_STYLE(BS_PUSHBUTTON as u32);
     let checkbox = WINDOW_STYLE(BS_AUTOCHECKBOX as u32);
 
-    mk("Connect", pushbutton, 20, 20, 140, 32, IDC_CONNECT, &button);
-    mk(
-        "Disconnect",
-        pushbutton,
-        180,
-        20,
-        140,
-        32,
-        IDC_DISCONNECT,
-        &button,
-    );
+    // One owner-drawn toggle: we paint it ourselves in WM_DRAWITEM so the label
+    // and colour follow the connection state (green = connected, amber = in
+    // progress, neutral = off). The text is empty here -- draw_toggle supplies it.
+    let ownerdraw = WINDOW_STYLE(BS_OWNERDRAW as u32);
+    mk("", ownerdraw, 20, 20, 300, 40, IDC_TOGGLE, &button);
     mk(
         "Split tunneling (geoip)",
         checkbox,
@@ -286,14 +292,13 @@ fn handle_command(hwnd: HWND, id: i32) {
         let Some(p) = app_from(hwnd) else { return };
         let app = &mut *p;
         match id {
-            IDC_CONNECT => {
-                if let Err(e) = app.connect() {
+            IDC_TOGGLE => {
+                // Active (connected or working towards it) -> stop; otherwise start.
+                if toggle_is_active(app.state()) {
+                    app.disconnect();
+                } else if let Err(e) = app.connect() {
                     set_status(hwnd, &format!("Error: {e}"));
                 }
-                refresh_ui(hwnd);
-            }
-            IDC_DISCONNECT => {
-                app.disconnect();
                 refresh_ui(hwnd);
             }
             IDC_SPLIT => {
@@ -432,5 +437,77 @@ fn refresh_ui(hwnd: HWND) {
             hwnd,
             &format!("TrustTunnel v{}: {short}", env!("CARGO_PKG_VERSION")),
         );
+        // Repaint the toggle so its label/colour track the new state.
+        let _ = InvalidateRect(control(hwnd, IDC_TOGGLE), None, true);
     }
+}
+
+/// Is the tunnel connected or actively working towards it? Drives both the
+/// toggle's click action (active -> disconnect) and its appearance.
+fn toggle_is_active(state: &crate::engine_state::ConnState) -> bool {
+    use crate::engine_state::ConnState::*;
+    matches!(state, Connecting | Connected | Reconnecting | Crashed)
+}
+
+// COLORREF is 0x00BBGGRR. Keep the palette ASCII-simple and Win7-safe (plain GDI).
+const fn rgb(r: u8, g: u8, b: u8) -> u32 {
+    (r as u32) | ((g as u32) << 8) | ((b as u32) << 16)
+}
+
+/// Label + background + text colour for the toggle in a given state.
+fn toggle_look(state: &crate::engine_state::ConnState) -> (&'static str, u32, u32) {
+    use crate::engine_state::ConnState::*;
+    const GREEN: u32 = rgb(46, 160, 67);
+    const AMBER: u32 = rgb(214, 158, 46);
+    const NEUTRAL: u32 = rgb(228, 228, 228);
+    const WHITE: u32 = rgb(255, 255, 255);
+    const BLACK: u32 = rgb(24, 24, 24);
+    match state {
+        Connected => ("Disconnect", GREEN, WHITE),
+        Connecting => ("Connecting...", AMBER, BLACK),
+        Reconnecting | Crashed => ("Reconnecting...", AMBER, BLACK),
+        Idle | Disconnected | Failed(_) => ("Connect", NEUTRAL, BLACK),
+    }
+}
+
+// Multiply each channel by ~0.85 -- used for the border and the pressed state.
+fn darken(c: u32) -> u32 {
+    let d = |ch: u32| (ch * 85 / 100) & 0xFF;
+    rgb(
+        d(c & 0xFF) as u8,
+        d((c >> 8) & 0xFF) as u8,
+        d((c >> 16) & 0xFF) as u8,
+    )
+}
+
+/// Paint the owner-drawn toggle button (WM_DRAWITEM).
+unsafe fn draw_toggle(hwnd: HWND, dis: &DRAWITEMSTRUCT) {
+    let state = app_from(hwnd)
+        .map(|p| (*p).state().clone())
+        .unwrap_or(crate::engine_state::ConnState::Disconnected);
+    let (label, mut bg, fg) = toggle_look(&state);
+    // Pressed -> darken so the click reads as a press.
+    if dis.itemState.0 & ODS_SELECTED.0 != 0 {
+        bg = darken(bg);
+    }
+    let hdc = dis.hDC;
+    let mut rc = dis.rcItem;
+
+    let fill = CreateSolidBrush(COLORREF(bg));
+    FillRect(hdc, &rc, fill);
+    let _ = DeleteObject(HGDIOBJ(fill.0));
+
+    let border = CreateSolidBrush(COLORREF(darken(bg)));
+    FrameRect(hdc, &rc, border);
+    let _ = DeleteObject(HGDIOBJ(border.0));
+
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, COLORREF(fg));
+    let mut text: Vec<u16> = label.encode_utf16().collect();
+    DrawTextW(
+        hdc,
+        &mut text,
+        &mut rc,
+        DT_CENTER | DT_VCENTER | DT_SINGLELINE,
+    );
 }

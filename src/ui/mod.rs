@@ -6,8 +6,9 @@ pub mod tray;
 pub mod window;
 
 // Child control ids (WM_COMMAND wParam low word).
-pub const IDC_CONNECT: i32 = 1001;
-pub const IDC_DISCONNECT: i32 = 1002;
+// Single connect/disconnect toggle button (owner-drawn: colour + label reflect
+// the connection state -- a plain Win32 push button cannot be recoloured).
+pub const IDC_TOGGLE: i32 = 1001;
 pub const IDC_SPLIT: i32 = 1003;
 pub const IDC_REFRESH: i32 = 1004;
 pub const IDC_STATUS: i32 = 1005;

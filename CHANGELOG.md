@@ -7,6 +7,12 @@ section matching the pushed tag (`## [X.Y.Z]`) as the GitHub Release notes.
 
 ## [Unreleased]
 
+### Changed
+- Replaced the separate Connect / Disconnect buttons with a single toggle whose
+  label and colour follow the connection state: neutral "Connect" when off,
+  amber "Connecting..." / "Reconnecting..." while working, green "Disconnect"
+  once connected. Owner-drawn (plain GDI, Win7-safe).
+
 ## [0.1.3] - 2026-07-24
 
 ### Added
