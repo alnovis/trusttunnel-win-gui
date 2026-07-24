@@ -5,7 +5,7 @@ All notable changes to this project are documented here. The format is based on
 [Semantic Versioning](https://semver.org/). The release workflow reads the
 section matching the pushed tag (`## [X.Y.Z]`) as the GitHub Release notes.
 
-## [Unreleased]
+## [0.1.4] - 2026-07-24
 
 ### Changed
 - Replaced the separate Connect / Disconnect buttons with a single toggle whose
