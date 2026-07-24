@@ -122,7 +122,6 @@ impl Vault {
         out.extend_from_slice(&ciphertext);
         Ok(out)
     }
-
 }
 
 fn derive_key(
