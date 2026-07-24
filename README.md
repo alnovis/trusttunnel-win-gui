@@ -104,6 +104,13 @@ Modules (portable = builds/tested off Windows; win = Windows-only):
 
 ## Build
 
+Enable the pre-commit hook once per clone so unformatted Rust cannot reach CI
+(the CI `cargo fmt --check` gate is strict):
+
+```
+git config core.hooksPath .githooks
+```
+
 The `windows` crate compiles only for Windows targets. On the dev machine
 (macOS/Linux) the portable modules are still testable:
 

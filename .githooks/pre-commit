@@ -1,0 +1,13 @@
+#!/bin/sh
+# Reject unformatted Rust before it reaches CI (the CI `cargo fmt --check`
+# gate has failed a release twice because of a stray blank line).
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+
+if ! cargo fmt --check; then
+    echo >&2
+    echo "pre-commit: code is not rustfmt-clean." >&2
+    echo "  run 'cargo fmt', re-stage, and commit again." >&2
+    echo "  (bypass with 'git commit --no-verify' if you must)" >&2
+    exit 1
+fi
