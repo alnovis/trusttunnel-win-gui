@@ -16,7 +16,7 @@ use crate::secret::Vault;
 use crate::win::wide;
 
 const CLASS_NAME: &str = "TrustTunnelGuiWindow";
-const WINDOW_TITLE: &str = "TrustTunnel";
+const WINDOW_TITLE: &str = concat!("TrustTunnel v", env!("CARGO_PKG_VERSION"));
 const WATCHDOG_TIMER: usize = 1;
 
 /// Bring an already-running instance's window to the foreground (it may be
@@ -68,7 +68,7 @@ pub fn run(vault: Vault, cfg: AppConfig) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             360,
-            300,
+            320,
             None,
             None,
             hinst,
@@ -267,6 +267,18 @@ unsafe fn create_controls(hwnd: HWND) {
         IDC_SETTINGS,
         &button,
     );
+    // Version, so it is obvious which build is running (helps when a stale
+    // instance is still in the tray -- the new launch just surfaces the old one).
+    mk(
+        concat!("v", env!("CARGO_PKG_VERSION")),
+        WINDOW_STYLE(0),
+        20,
+        238,
+        320,
+        12,
+        -1,
+        &static_cls,
+    );
 }
 
 fn handle_command(hwnd: HWND, id: i32) {
@@ -416,6 +428,9 @@ fn refresh_ui(hwnd: HWND) {
             }
         };
         set_status(hwnd, &long);
-        tray::update_tooltip(hwnd, &format!("TrustTunnel: {short}"));
+        tray::update_tooltip(
+            hwnd,
+            &format!("TrustTunnel v{}: {short}", env!("CARGO_PKG_VERSION")),
+        );
     }
 }
