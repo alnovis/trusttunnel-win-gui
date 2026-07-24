@@ -17,7 +17,6 @@ pub enum FailReason {
     Certificate,
     Config,
     Network,
-    Unknown,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

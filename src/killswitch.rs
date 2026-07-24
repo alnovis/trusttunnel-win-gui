@@ -19,10 +19,6 @@ impl KillSwitch {
         Self { active: None }
     }
 
-    pub fn is_engaged(&self) -> bool {
-        self.active.is_some()
-    }
-
     /// Make the kill switch match `should`. Engages/disengages only on change.
     pub fn sync(&mut self, should: bool, endpoint_ips: &[IpAddr]) -> Result<(), String> {
         match (should, self.active.is_some()) {
@@ -49,10 +45,6 @@ pub struct KillSwitch {
 impl KillSwitch {
     pub fn new() -> Self {
         Self { active: false }
-    }
-
-    pub fn is_engaged(&self) -> bool {
-        self.active
     }
 
     pub fn sync(&mut self, should: bool, _endpoint_ips: &[IpAddr]) -> Result<(), String> {

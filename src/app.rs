@@ -207,10 +207,6 @@ impl App {
         }
     }
 
-    pub fn is_refreshing(&self) -> bool {
-        self.refreshing
-    }
-
     // --- watchdog tick ---
 
     /// Reconcile actual toward desired. `probe_result` is an optional external
@@ -284,6 +280,9 @@ impl App {
     /// block VPN operation.
     fn update_killswitch(&mut self) {
         let should = self.cfg.killswitch_enabled
+            // WFP block-all only fits the system-wide TUN. In SOCKS mode traffic
+            // is per-app via the proxy, so blocking everything would be wrong.
+            && self.cfg.listener_mode != "socks"
             && self.desired == Desired::Connected
             && self.session_connected
             && !self.tracker.state.is_connected();

@@ -111,6 +111,12 @@ pub struct AppConfig {
     pub change_system_dns: bool,
     /// Ports allowed inbound while the kill switch is on (`killswitch_allow_ports`).
     pub killswitch_allow_ports: Vec<u16>,
+
+    /// Listener mode: "tun" (system-wide TUN via Wintun) or "socks" (SOCKS5
+    /// proxy, no driver -- useful where Wintun cannot run, e.g. Windows 7).
+    pub listener_mode: String,
+    /// SOCKS5 listen address when listener_mode == "socks".
+    pub socks_address: String,
 }
 
 impl Default for AppConfig {
@@ -125,6 +131,8 @@ impl Default for AppConfig {
             mtu_size: 1280,
             change_system_dns: true,
             killswitch_allow_ports: Vec::new(),
+            listener_mode: "tun".into(),
+            socks_address: "127.0.0.1:1080".into(),
         }
     }
 }

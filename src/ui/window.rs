@@ -410,7 +410,6 @@ fn refresh_ui(hwnd: HWND) {
                     FailReason::Certificate => "certificate error",
                     FailReason::Config => "bad configuration",
                     FailReason::Network => "network error",
-                    FailReason::Unknown => "connection failed",
                 };
                 let detail = app.last_error().unwrap_or(why);
                 ("failed", format!("Status: FAILED -- {detail}"))

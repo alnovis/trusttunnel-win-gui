@@ -73,11 +73,17 @@ pub fn render(cfg: &AppConfig, exclusions: &[String]) -> String {
     }
     out.push('\n');
 
-    // TUN listener. Route programming (incl. exclusions handling) is done by
-    // the engine via Wintun on Windows.
-    out.push_str("[listener.tun]\n");
-    out.push_str(&format!("mtu_size = {}\n", cfg.mtu_size));
-    out.push_str(&format!("change_system_dns = {}\n", cfg.change_system_dns));
+    // Listener: SOCKS5 proxy (no driver) or system-wide TUN (Wintun).
+    if cfg.listener_mode == "socks" {
+        out.push_str("[listener.socks]\n");
+        out.push_str(&format!("address = {}\n", quote(&cfg.socks_address)));
+    } else {
+        // TUN. Route programming (incl. exclusions handling) is done by the
+        // engine via Wintun on Windows.
+        out.push_str("[listener.tun]\n");
+        out.push_str(&format!("mtu_size = {}\n", cfg.mtu_size));
+        out.push_str(&format!("change_system_dns = {}\n", cfg.change_system_dns));
+    }
 
     out
 }
@@ -161,6 +167,25 @@ mod tests {
         let cfg = AppConfig::default();
         let toml = render(&cfg, &["1.2.3.0/24".into(), "5.6.0.0/16".into()]);
         assert!(toml.contains("exclusions = [\"1.2.3.0/24\", \"5.6.0.0/16\"]"));
+    }
+
+    #[test]
+    fn tun_mode_emits_tun_listener() {
+        let cfg = AppConfig::default(); // default listener_mode = "tun"
+        let toml = render(&cfg, &[]);
+        assert!(toml.contains("[listener.tun]"));
+        assert!(!toml.contains("[listener.socks]"));
+    }
+
+    #[test]
+    fn socks_mode_emits_socks_listener() {
+        let mut cfg = AppConfig::default();
+        cfg.listener_mode = "socks".into();
+        cfg.socks_address = "127.0.0.1:1080".into();
+        let toml = render(&cfg, &[]);
+        assert!(toml.contains("[listener.socks]"));
+        assert!(toml.contains("address = \"127.0.0.1:1080\""));
+        assert!(!toml.contains("[listener.tun]"));
     }
 
     #[test]

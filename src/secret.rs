@@ -123,10 +123,6 @@ impl Vault {
         Ok(out)
     }
 
-    /// Re-key with a new password (fresh salt). Caller then re-seals + writes.
-    pub fn change_password(&self, new_password: &str) -> Result<Vault, String> {
-        Vault::create(new_password)
-    }
 }
 
 fn derive_key(

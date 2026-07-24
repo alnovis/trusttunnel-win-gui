@@ -58,6 +58,8 @@ mod ids {
     pub const IDE_MTU: i32 = 2003;
     pub const IDE_DNS: i32 = 2004;
     pub const IDE_KSPORTS: i32 = 2005;
+    pub const IDE_SOCKS: i32 = 2006;
+    pub const IDC_MODE: i32 = 2106;
 
     pub const IDC_IPV6: i32 = 2101;
     pub const IDC_ANTIDPI: i32 = 2102;
@@ -69,6 +71,7 @@ const PROTOCOLS: &[&str] = &["http2", "http3"];
 const FALLBACKS: &[&str] = &["(none)", "http2", "http3"];
 const RIRS: &[&str] = &["ripencc", "arin", "apnic", "lacnic", "afrinic"];
 const LOGLEVELS: &[&str] = &["error", "warn", "info", "debug", "trace"];
+const MODES: &[&str] = &["tun", "socks"];
 
 /// MAKEINTRESOURCE: a resource id encoded as a PCWSTR.
 fn res(id: u16) -> PCWSTR {
@@ -277,6 +280,8 @@ fn read_settings(hdlg: HWND, cfg: &mut AppConfig) {
 
 fn populate_advanced(hdlg: HWND, cfg: &AppConfig) {
     let s = &cfg.server;
+    combo_fill(hdlg, ids::IDC_MODE, MODES, &cfg.listener_mode);
+    set_text(hdlg, ids::IDE_SOCKS, &cfg.socks_address);
     set_check(hdlg, ids::IDC_IPV6, s.has_ipv6);
     set_check(hdlg, ids::IDC_ANTIDPI, s.anti_dpi);
     set_check(hdlg, ids::IDC_PQ, cfg.post_quantum_enabled);
@@ -294,6 +299,11 @@ fn populate_advanced(hdlg: HWND, cfg: &AppConfig) {
 }
 
 fn read_advanced(hdlg: HWND, cfg: &mut AppConfig) {
+    cfg.listener_mode = combo_value(hdlg, ids::IDC_MODE, MODES);
+    let socks = get_text(hdlg, ids::IDE_SOCKS).trim().to_string();
+    if !socks.is_empty() {
+        cfg.socks_address = socks;
+    }
     cfg.server.has_ipv6 = get_check(hdlg, ids::IDC_IPV6);
     cfg.server.anti_dpi = get_check(hdlg, ids::IDC_ANTIDPI);
     cfg.post_quantum_enabled = get_check(hdlg, ids::IDC_PQ);

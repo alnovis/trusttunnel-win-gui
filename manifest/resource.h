@@ -47,6 +47,8 @@
 #define IDE_MTU           2003
 #define IDE_DNS           2004
 #define IDE_KSPORTS       2005
+#define IDE_SOCKS         2006
+#define IDC_MODE          2106
 
 // --- Advanced dialog: checks ---
 #define IDC_IPV6          2101

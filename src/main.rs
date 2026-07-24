@@ -5,6 +5,10 @@
 // The engine does all TLS/TUN/routing; this app only writes config and manages
 // the process (see src/app.rs).
 #![cfg_attr(windows, windows_subsystem = "windows")]
+// On non-Windows the entry point is a stub, so the whole App/UI call graph is
+// unreachable and every item looks dead. Silence that only off-Windows; real
+// dead-code detection stays active for the actual (Windows) target.
+#![cfg_attr(not(windows), allow(dead_code))]
 
 mod app;
 mod bootstrap;

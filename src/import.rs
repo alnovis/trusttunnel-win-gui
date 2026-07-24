@@ -33,8 +33,14 @@ struct ImportedTun {
 }
 
 #[derive(Debug, Default, Deserialize)]
+struct ImportedSocks {
+    address: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
 struct ImportedListener {
     tun: Option<ImportedTun>,
+    socks: Option<ImportedSocks>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -110,12 +116,21 @@ pub fn import_into(text: &str, cfg: &mut AppConfig) -> Result<(), String> {
         }
     }
 
-    if let Some(tun) = parsed.listener.and_then(|l| l.tun) {
-        if let Some(v) = tun.mtu_size {
-            cfg.mtu_size = v;
-        }
-        if let Some(v) = tun.change_system_dns {
-            cfg.change_system_dns = v;
+    if let Some(listener) = parsed.listener {
+        // Adopt whichever listener the exported config uses.
+        if let Some(socks) = listener.socks {
+            cfg.listener_mode = "socks".into();
+            if let Some(a) = socks.address {
+                cfg.socks_address = a;
+            }
+        } else if let Some(tun) = listener.tun {
+            cfg.listener_mode = "tun".into();
+            if let Some(v) = tun.mtu_size {
+                cfg.mtu_size = v;
+            }
+            if let Some(v) = tun.change_system_dns {
+                cfg.change_system_dns = v;
+            }
         }
     }
 
@@ -180,6 +195,23 @@ change_system_dns = false
         import_into("[endpoint]\nhostname = \"h\"\n", &mut cfg).unwrap();
         assert_eq!(cfg.server.hostname, "h");
         assert_eq!(cfg.server.upstream_protocol, "http2"); // default kept
+    }
+
+    #[test]
+    fn imports_tun_listener() {
+        let mut cfg = AppConfig::default();
+        import_into(SAMPLE, &mut cfg).unwrap(); // SAMPLE has [listener.tun]
+        assert_eq!(cfg.listener_mode, "tun");
+    }
+
+    #[test]
+    fn imports_socks_listener() {
+        let mut cfg = AppConfig::default();
+        let toml =
+            "[endpoint]\nhostname = \"h\"\n\n[listener.socks]\naddress = \"127.0.0.1:9999\"\n";
+        import_into(toml, &mut cfg).unwrap();
+        assert_eq!(cfg.listener_mode, "socks");
+        assert_eq!(cfg.socks_address, "127.0.0.1:9999");
     }
 
     #[test]

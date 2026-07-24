@@ -65,31 +65,36 @@ END
 //////////////////////////////////////////////////////////////////////////////
 // Advanced dialog
 //////////////////////////////////////////////////////////////////////////////
-IDD_ADVANCED DIALOGEX 0, 0, 252, 200
+IDD_ADVANCED DIALOGEX 0, 0, 252, 234
 STYLE DS_MODALFRAME | DS_SETFONT | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "TrustTunnel - Advanced"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    AUTOCHECKBOX    "Route IPv6 through VPN",    IDC_IPV6,      7,   7, 237, 10
-    AUTOCHECKBOX    "Anti-DPI",                  IDC_ANTIDPI,   7,  21, 237, 10
-    AUTOCHECKBOX    "Post-quantum crypto",       IDC_PQ,        7,  35, 237, 10
-    AUTOCHECKBOX    "Let engine change system DNS", IDC_CHANGEDNS, 7, 49, 237, 10
+    LTEXT           "Listener mode:", -1,        7,   9, 60, 10
+    COMBOBOX                        IDC_MODE,    70,   7, 70, 60, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "SOCKS address:", -1,       150,   9, 55, 10
+    EDITTEXT                        IDE_SOCKS,  150,  21, 94, 12, ES_AUTOHSCROLL
 
-    LTEXT           "client_random (prefix[/mask]):", -1, 7, 65, 110, 10
-    EDITTEXT                        IDE_CLIENTRANDOM, 120, 63, 124, 12, ES_AUTOHSCROLL
-    LTEXT           "custom_sni:",  -1,          7,  81, 110, 10
-    EDITTEXT                        IDE_CUSTOMSNI,120, 79, 124, 12, ES_AUTOHSCROLL
-    LTEXT           "MTU size:",    -1,          7,  97, 110, 10
-    EDITTEXT                        IDE_MTU,     120, 95,  40, 12, ES_AUTOHSCROLL | ES_NUMBER
+    AUTOCHECKBOX    "Route IPv6 through VPN",    IDC_IPV6,      7,  35, 237, 10
+    AUTOCHECKBOX    "Anti-DPI",                  IDC_ANTIDPI,   7,  49, 237, 10
+    AUTOCHECKBOX    "Post-quantum crypto",       IDC_PQ,        7,  63, 237, 10
+    AUTOCHECKBOX    "Let engine change system DNS", IDC_CHANGEDNS, 7, 77, 237, 10
 
-    LTEXT           "DNS upstreams (one per line):", -1, 7, 113, 237, 10
-    EDITTEXT                        IDE_DNS,      7, 125, 237, 26, ES_MULTILINE | ES_WANTRETURN | WS_VSCROLL | ES_AUTOVSCROLL
+    LTEXT           "client_random (prefix[/mask]):", -1, 7, 93, 110, 10
+    EDITTEXT                        IDE_CLIENTRANDOM, 120, 91, 124, 12, ES_AUTOHSCROLL
+    LTEXT           "custom_sni:",  -1,          7, 109, 110, 10
+    EDITTEXT                        IDE_CUSTOMSNI,120,107, 124, 12, ES_AUTOHSCROLL
+    LTEXT           "MTU size:",    -1,          7, 125, 110, 10
+    EDITTEXT                        IDE_MTU,     120,123,  40, 12, ES_AUTOHSCROLL | ES_NUMBER
 
-    LTEXT           "Kill switch allow ports (comma):", -1, 7, 157, 130, 10
-    EDITTEXT                        IDE_KSPORTS, 140, 155, 104, 12, ES_AUTOHSCROLL
+    LTEXT           "DNS upstreams (one per line):", -1, 7, 141, 237, 10
+    EDITTEXT                        IDE_DNS,      7, 153, 237, 26, ES_MULTILINE | ES_WANTRETURN | WS_VSCROLL | ES_AUTOVSCROLL
 
-    DEFPUSHBUTTON   "OK",           IDOK,       138, 179, 50, 14
-    PUSHBUTTON      "Cancel",       IDCANCEL,   194, 179, 50, 14
+    LTEXT           "Kill switch allow ports (comma):", -1, 7, 185, 130, 10
+    EDITTEXT                        IDE_KSPORTS, 140, 183, 104, 12, ES_AUTOHSCROLL
+
+    DEFPUSHBUTTON   "OK",           IDOK,       138, 207, 50, 14
+    PUSHBUTTON      "Cancel",       IDCANCEL,   194, 207, 50, 14
 END
 
 //////////////////////////////////////////////////////////////////////////////

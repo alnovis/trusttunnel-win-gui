@@ -54,15 +54,6 @@ impl Engine {
         self.requested_stop
     }
 
-    /// The running engine's PID, if known (owned or adopted).
-    pub fn pid(&self) -> Option<u32> {
-        if let Some(c) = &self.owned {
-            Some(c.id())
-        } else {
-            self.adopted_pid
-        }
-    }
-
     /// On wrapper startup: if the PID file points at a live trusttunnel_client
     /// process, adopt it so the UI shows "connected" and the watchdog can
     /// supervise it. Returns true if a process was adopted.
@@ -178,10 +169,6 @@ impl Engine {
         }
         self.lines = None;
         pidfile::clear();
-    }
-
-    pub fn restart(&mut self, config_path: &Path, log_level: &str) -> std::io::Result<()> {
-        self.start(config_path, log_level)
     }
 }
 
