@@ -40,8 +40,10 @@ jobs:
   #    is a single self-contained exe. i686 asset -> 32-bit Windows; x86_64
   #    asset -> 64-bit Windows (the Wintun kernel driver must match the OS, so a
   #    32-bit build does NOT cover 64-bit Windows).
-  #    NB: MSVC-built binaries target modern Windows; the Windows 7 runtime is
-  #    still to be validated on hardware -- switch to *-pc-windows-gnu if needed.
+  #    Uses the *-win7-windows-msvc targets so the binaries run on Windows 7+
+  #    (current stable Rust targets Windows 10+, which crashes on 7 with
+  #    0xc0000005). These are tier-3 targets -> nightly + build-std. They also
+  #    run on Windows 8/10/11, so this one set covers Windows 7 through 11.
   build:
     name: Build (${{ matrix.arch }})
     needs: validate
@@ -55,16 +57,18 @@ jobs:
       matrix:
         include:
           - arch: x86_64
-            target: x86_64-pc-windows-msvc
+            target: x86_64-win7-windows-msvc
           - arch: i686
-            target: i686-pc-windows-msvc
+            target: i686-win7-windows-msvc
     steps:
       - uses: actions/checkout@v5
 
+      # Nightly + rust-src: the win7 targets are tier 3 (no prebuilt std), so we
+      # build std from source with -Z build-std. Do NOT `rustup target add` them.
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          targets: ${{ matrix.target }}
+          components: rust-src
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
@@ -89,7 +93,7 @@ jobs:
           Get-ChildItem $dest | Select-Object Name,Length
 
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }} --features embed-engine
+        run: cargo build --release -Z build-std=std,panic_abort --target ${{ matrix.target }} --features embed-engine
 
       - name: Stage artifact
         shell: pwsh
