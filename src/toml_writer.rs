@@ -78,9 +78,16 @@ pub fn render(cfg: &AppConfig, exclusions: &[String]) -> String {
         out.push_str("[listener.socks]\n");
         out.push_str(&format!("address = {}\n", quote(&cfg.socks_address)));
     } else {
-        // TUN. Route programming (incl. exclusions handling) is done by the
-        // engine via Wintun on Windows.
+        // TUN. included_routes/excluded_routes MUST be present -- the engine
+        // only programs routes it finds in the config (absent => empty => the
+        // adapter comes up but nothing is routed into it => "connected" but no
+        // traffic). Route everything in; keep LAN/reserved ranges direct.
         out.push_str("[listener.tun]\n");
+        out.push_str("included_routes = [\"0.0.0.0/0\", \"2000::/3\"]\n");
+        out.push_str(
+            "excluded_routes = [\"0.0.0.0/8\", \"10.0.0.0/8\", \"169.254.0.0/16\", \
+             \"172.16.0.0/12\", \"192.168.0.0/16\", \"224.0.0.0/3\"]\n",
+        );
         out.push_str(&format!("mtu_size = {}\n", cfg.mtu_size));
         out.push_str(&format!("change_system_dns = {}\n", cfg.change_system_dns));
     }
@@ -175,6 +182,10 @@ mod tests {
         let toml = render(&cfg, &[]);
         assert!(toml.contains("[listener.tun]"));
         assert!(!toml.contains("[listener.socks]"));
+        // The routes are what actually send traffic into the tunnel; without
+        // included_routes the engine connects but routes nothing.
+        assert!(toml.contains("included_routes = [\"0.0.0.0/0\", \"2000::/3\"]"));
+        assert!(toml.contains("excluded_routes = ["));
     }
 
     #[test]
